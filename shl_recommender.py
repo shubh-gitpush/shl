@@ -23,6 +23,10 @@ TOP_K = 10
 # -----------------------------
 # LOAD DATA
 # -----------------------------
+# Make path relative to this file
+import os
+DATA_PATH = os.path.join(os.path.dirname(__file__), "assessments_all.json")
+
 with open(DATA_PATH, "r", encoding="utf-8") as f:
     data = json.load(f)
 
@@ -45,11 +49,19 @@ for item in data:
 print(f"Loaded {len(records)} assessments")
 
 # -----------------------------
-# EMBEDDINGS (done once at startup)
+# GLOBAL VARIABLES
 # -----------------------------
-model = SentenceTransformer(MODEL_NAME)
-assessment_texts = [r["text"] for r in records]
-assessment_embeddings = model.encode(assessment_texts, show_progress_bar=True)
+model = None
+embeddings = None
+
+def initialize_model():
+    """Initialize model and embeddings (called once)"""
+    global model, embeddings
+    if model is None:
+        model = SentenceTransformer(MODEL_NAME)
+        assessment_texts = [r["text"] for r in records]
+        embeddings = model.encode(assessment_texts, show_progress_bar=True)
+        print(f"Initialized model with {len(embeddings)} embeddings")
 
 # -----------------------------
 # UTILS
@@ -69,8 +81,9 @@ def extract_text_from_url(url: str) -> str:
 
 
 def recommend(query_text: str, k: int = TOP_K):
+    initialize_model()  # Ensure model is loaded
     query_emb = model.encode([query_text])
-    scores = cosine_similarity(query_emb, assessment_embeddings)[0]
+    scores = cosine_similarity(query_emb, embeddings)[0]
     top_idx = np.argsort(scores)[-k:][::-1]
 
     results = []
