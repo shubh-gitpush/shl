@@ -1,9 +1,6 @@
 [build]
   functions = ".netlify/functions"
 
-[functions]
-  python_runtime = "python3.12"
-
 [[redirects]]
   from = "/api/health"
   to = "/.netlify/functions/health"
