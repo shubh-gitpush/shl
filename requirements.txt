@@ -3,7 +3,7 @@ uvicorn==0.30.6
 
 numpy==1.26.4
 pandas==2.1.4
-scikit-learn==1.5.1
+scikit-learn==1.4.2
 
 sentence-transformers==3.0.1
 torch==2.2.2
