@@ -28,6 +28,3 @@
   from = "/*"
   to = "/index.html"
   status = 200
-
-[context.production]
-  command = "uvicorn shl_recommender:app --host 0.0.0.0 --port 8000"
