@@ -1,19 +1,11 @@
 import json
-import sys
 import os
 
-# Add the project root to Python path
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, project_root)
-
-# Main handler function - Netlify looks for this
 def main(event, context):
     """
     Netlify Function handler for SHL Assessment Recommender
     """
     try:
-        # Import here to avoid import issues
-        from shl_recommender import recommend, extract_text_from_url
         # Handle CORS preflight
         if event.get('httpMethod') == 'OPTIONS':
             return {
@@ -49,30 +41,27 @@ def main(event, context):
         
         body = json.loads(event.get('body', '{}'))
         
-        # Extract query or URL
-        query_text = None
-        if body.get('url'):
-            text = extract_text_from_url(body['url'])
-            if not text:
-                return {
-                    'statusCode': 400,
-                    'headers': {'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'Unable to extract text from URL'})
-                }
-            query_text = text
-        elif body.get('query'):
-            query_text = body['query']
-        else:
-            return {
-                'statusCode': 400,
-                'headers': {'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Provide either query or url'})
+        # For now, return a simple mock response
+        body = json.loads(event.get('body', '{}'))
+        
+        query = body.get('query', 'test query')
+        
+        # Mock recommendations
+        mock_results = [
+            {
+                'Assessment name': 'Numerical Reasoning Test',
+                'URL': 'https://www.shl.com/assessments/numerical-reasoning/'
+            },
+            {
+                'Assessment name': 'Verbal Reasoning Test', 
+                'URL': 'https://www.shl.com/assessments/verbal-reasoning/'
+            },
+            {
+                'Assessment name': 'Logical Reasoning Test',
+                'URL': 'https://www.shl.com/assessments/logical-reasoning/'
             }
+        ]
         
-        # Get recommendations
-        results = recommend(query_text, k=10)
-        
-        # Return results
         return {
             'statusCode': 200,
             'headers': {
@@ -80,10 +69,9 @@ def main(event, context):
                 'Content-Type': 'application/json'
             },
             'body': json.dumps({
-                'results': [
-                    {'Assessment name': r['assessment_name'], 'URL': r['url']}
-                    for r in results
-                ]
+                'query': query,
+                'results': mock_results,
+                'note': 'This is a mock response. Full ML model coming soon!'
             })
         }
         
