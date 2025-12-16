@@ -3,15 +3,16 @@ import sys
 import os
 
 # Add the project root to Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-
-from shl_recommender import recommend, extract_text_from_url
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, project_root)
 
 def handler(event, context):
     """
     Netlify Function handler for SHL Assessment Recommender
     """
     try:
+        # Import here to avoid import issues
+        from shl_recommender import recommend, extract_text_from_url
         # Handle CORS preflight
         if event.get('httpMethod') == 'OPTIONS':
             return {
@@ -22,6 +23,19 @@ def handler(event, context):
                     'Access-Control-Allow-Methods': 'POST, OPTIONS'
                 },
                 'body': ''
+            }
+        
+        # Handle GET request for health check
+        if event.get('httpMethod') == 'GET':
+            return {
+                'statusCode': 200,
+                'headers': {'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'message': 'SHL Assessment Recommender API is running',
+                    'endpoints': {
+                        'POST /api/recommend': 'Get recommendations with query or url'
+                    }
+                })
             }
         
         # Parse the request body
