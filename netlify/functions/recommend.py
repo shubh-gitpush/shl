@@ -6,7 +6,8 @@ import os
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, project_root)
 
-def handler(event, context):
+# Main handler function - Netlify looks for this
+def main(event, context):
     """
     Netlify Function handler for SHL Assessment Recommender
     """
@@ -92,3 +93,6 @@ def handler(event, context):
             'headers': {'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'error': str(e)})
         }
+
+# Also alias as handler for compatibility
+handler = main

@@ -18,11 +18,24 @@
 }
     </pre>
 
+    <button onclick="testFunction()">Test Function</button>
+    <button onclick="testRecommend()">Test Recommend</button>
+    <div id="results"></div>
+
     <script>
-        // Test the API
-        async function testAPI() {
+        async function testFunction() {
             try {
-                const response = await fetch('/api/recommend', {
+                const response = await fetch('/.netlify/functions/test');
+                const data = await response.json();
+                document.getElementById('results').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = '<p>Error: ' + error.message + '</p>';
+            }
+        }
+
+        async function testRecommend() {
+            try {
+                const response = await fetch('/.netlify/functions/recommend', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -32,14 +45,11 @@
                     })
                 });
                 const data = await response.json();
-                console.log('API Response:', data);
+                document.getElementById('results').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
             } catch (error) {
-                console.error('API Error:', error);
+                document.getElementById('results').innerHTML = '<p>Error: ' + error.message + '</p>';
             }
         }
-        
-        // Uncomment to test on page load
-        // testAPI();
     </script>
 </body>
 </html>
