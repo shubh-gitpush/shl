@@ -4,50 +4,80 @@
     <title>SHL Assessment Recommender API</title>
 </head>
 <body>
-    <h1>SHL Assessment Recommender</h1>
-    <p>API is running! Use POST /api/recommend with JSON payload:</p>
+    <h1>🎯 SHL Assessment Recommender</h1>
+    <p><strong>FastAPI is running!</strong> Available endpoints:</p>
+    
+    <h3>📊 Health Check:</h3>
+    <p>GET <code>/health</code></p>
+    
+    <h3>🔍 Get Recommendations:</h3>
+    <p>POST <code>/recommend</code> with JSON payload:</p>
     <pre>
 {
-  "query": "your job description text here"
+  "query": "Data analyst with strong analytical and numerical reasoning skills"
 }
     </pre>
-    <p>Or:</p>
+    <p>Or with a job posting URL:</p>
     <pre>
 {
   "url": "https://example.com/job-posting"
 }
     </pre>
 
-    <button onclick="testFunction()">Test Function</button>
-    <button onclick="testRecommend()">Test Recommend</button>
+    <button onclick="checkHealth()">Check Health</button>
+    <button onclick="testRecommend()">Test Recommendations</button>
+    <button onclick="testWithURL()">Test with URL</button>
     <div id="results"></div>
 
     <script>
-        async function testFunction() {
+        async function checkHealth() {
             try {
-                const response = await fetch('/.netlify/functions/test');
+                const response = await fetch('/health');
                 const data = await response.json();
-                document.getElementById('results').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                document.getElementById('results').innerHTML = 
+                    '<h4>Health Status:</h4><pre>' + JSON.stringify(data, null, 2) + '</pre>';
             } catch (error) {
-                document.getElementById('results').innerHTML = '<p>Error: ' + error.message + '</p>';
+                document.getElementById('results').innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
             }
         }
 
         async function testRecommend() {
             try {
-                const response = await fetch('/.netlify/functions/recommend', {
+                document.getElementById('results').innerHTML = '<p>🔄 Getting recommendations...</p>';
+                const response = await fetch('/recommend', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        query: 'Data analyst with strong analytical skills'
+                        query: 'Data analyst with strong analytical and numerical reasoning skills'
                     })
                 });
                 const data = await response.json();
-                document.getElementById('results').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                document.getElementById('results').innerHTML = 
+                    '<h4>Recommendations:</h4><pre>' + JSON.stringify(data, null, 2) + '</pre>';
             } catch (error) {
-                document.getElementById('results').innerHTML = '<p>Error: ' + error.message + '</p>';
+                document.getElementById('results').innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+            }
+        }
+
+        async function testWithURL() {
+            try {
+                document.getElementById('results').innerHTML = '<p>🔄 Testing URL extraction...</p>';
+                const response = await fetch('/recommend', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url: 'https://www.linkedin.com/jobs/view/sample-job'
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('results').innerHTML = 
+                    '<h4>URL Test Results:</h4><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('results').innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
             }
         }
     </script>
