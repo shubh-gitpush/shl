@@ -13,19 +13,14 @@ from pydantic import BaseModel
 import requests
 from bs4 import BeautifulSoup
 
-# -----------------------------
+
 # CONFIG
-# -----------------------------
+
 DATA_PATH = "assessments_all.json"  # your scraped file (519 items)
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 TOP_K = 10
 
-# -----------------------------
 # LOAD DATA
-# -----------------------------
-# Make path relative to this file
-import os
-DATA_PATH = os.path.join(os.path.dirname(__file__), "assessments_all.json")
 
 with open(DATA_PATH, "r", encoding="utf-8") as f:
     data = json.load(f)
@@ -48,27 +43,14 @@ for item in data:
 
 print(f"Loaded {len(records)} assessments")
 
-# -----------------------------
-# GLOBAL VARIABLES
-# -----------------------------
-model = None
-embeddings = None
 
-def initialize_model():
-    """Initialize model and embeddings (called once)"""
-    global model, embeddings
-    if model is None:
-        print("Loading SentenceTransformer model...")
-        model = SentenceTransformer(MODEL_NAME)
-        print("Encoding assessment texts...")
-        assessment_texts = [r["text"] for r in records]
-        embeddings = model.encode(assessment_texts, show_progress_bar=False)  # Disable progress bar for deployment
-        print(f"✅ Initialized model with {len(embeddings)} embeddings")
-    return model is not None
+# EMBEDDINGS (done once at startup)
 
-# -----------------------------
-# UTILS
-# -----------------------------
+model = SentenceTransformer(MODEL_NAME)
+assessment_texts = [r["text"] for r in records]
+assessment_embeddings = model.encode(assessment_texts, show_progress_bar=True)
+
+
 
 def extract_text_from_url(url: str) -> str:
     """Fetch and extract visible text from a JD URL"""
@@ -84,35 +66,22 @@ def extract_text_from_url(url: str) -> str:
 
 
 def recommend(query_text: str, k: int = TOP_K):
-    try:
-        if not initialize_model():
-            raise Exception("Failed to initialize model")
-        
-        query_emb = model.encode([query_text])
-        scores = cosine_similarity(query_emb, embeddings)[0]
-        top_idx = np.argsort(scores)[-k:][::-1]
+    query_emb = model.encode([query_text])
+    scores = cosine_similarity(query_emb, assessment_embeddings)[0]
+    top_idx = np.argsort(scores)[-k:][::-1]
 
-        results = []
-        for i in top_idx:
-            results.append({
-                "assessment_name": records[i]["name"],
-                "url": records[i]["url"],
-                "score": float(scores[i])
-            })
-        return results
-    except Exception as e:
-        print(f"Error in recommend function: {str(e)}")
-        # Return fallback results
-        return [
-            {"assessment_name": "Numerical Reasoning Test", "url": "https://www.shl.com/assessments/numerical-reasoning/", "score": 0.8},
-            {"assessment_name": "Verbal Reasoning Test", "url": "https://www.shl.com/assessments/verbal-reasoning/", "score": 0.7},
-            {"assessment_name": "Logical Reasoning Test", "url": "https://www.shl.com/assessments/logical-reasoning/", "score": 0.6}
-        ]
+    results = []
+    for i in top_idx:
+        results.append({
+            "assessment_name": records[i]["name"],
+            "url": records[i]["url"],
+            "score": float(scores[i])
+        })
+    return results
 
 
-# -----------------------------
 # CSV EVALUATION / PREDICTION
-# -----------------------------
+
 
 
 def recommend_for_query(query: str, k: int = TOP_K):
@@ -154,7 +123,7 @@ def run_on_test_file(test_file_path: str, output_csv_path: str):
     df["recommended_assessments"] = predictions
     df.to_csv(output_csv_path, index=False)
 
-    print(f"✅ Predictions saved to {output_csv_path}")
+    print(f"Predictions saved to {output_csv_path}")
 
 
 def evaluate_on_labeled_file(train_file_path: str, k: int = 10):
@@ -182,7 +151,7 @@ def evaluate_on_labeled_file(train_file_path: str, k: int = 10):
             break
 
     if gt_col is None:
-        print("❌ No ground truth column found")
+        print("No ground truth column found")
         return
 
     hits = 0
@@ -203,45 +172,19 @@ def evaluate_on_labeled_file(train_file_path: str, k: int = 10):
             hits += 1
         total += 1
 
-    print(f"✅ Recall@{k}: {hits/total:.2f}")
+    print(f"Recall@{k}: {hits/total:.2f}")
 
 
 
 
-# -----------------------------
 # FASTAPI APP
-# -----------------------------
-app = FastAPI(title="SHL Assessment Recommender")
 
-@app.on_event("startup")
-async def startup_event():
-    print("🚀 Starting SHL Assessment Recommender...")
-    initialize_model()
-    print("✅ Application ready!")
+app = FastAPI(title="SHL Assessment Recommender")
 
 class QueryInput(BaseModel):
     query: str | None = None
     url: str | None = None
 
-@app.get("/")
-async def root():
-    return {
-        "message": "SHL Assessment Recommender API",
-        "status": "running",
-        "endpoints": {
-            "POST /recommend": "Get assessment recommendations",
-            "GET /health": "Health check"
-        }
-    }
-
-@app.get("/health")
-async def health():
-    model_ready = model is not None and embeddings is not None
-    return {
-        "status": "healthy" if model_ready else "initializing",
-        "model_loaded": model_ready,
-        "assessments_count": len(records)
-    }
 
 @app.post("/recommend")
 def recommend_api(payload: QueryInput):
@@ -266,9 +209,7 @@ def recommend_api(payload: QueryInput):
         ]
     }
 
-# -----------------------------
-# LOCAL TEST (optional)
-# -----------------------------
+
 if __name__ == "__main__":
     q = "Data analyst with strong numerical and analytical reasoning"
     recs = recommend(q)
